@@ -10,6 +10,7 @@ class ChannelResponse(BaseModel):
     id: str
     channel_link: str
     channel_id: str
+    channel_name: str
     channel_vector: List[float]
     related_channels: List[str] = []
 

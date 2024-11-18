@@ -69,7 +69,7 @@ async def get_channel(channel_id: str):
     :return ChannelResponse:
     """
     try:
-        channel = get_channel_by_id(ObjectId(channel_id))
+        channel = get_channel_by_id(channel_id)
         if channel is None:
             raise HTTPException(status_code=404, detail="Канала с таким id не существует")
 
@@ -121,7 +121,7 @@ async def add_related_channels(channel_id: str, request: AddRelatedChannelReques
     :raises HTTPException: В случае рандомных ошибок БД, ну или если канала не существует
     """
     try:
-        channel = get_channel_by_id(ObjectId(channel_id))
+        channel = get_channel_by_id(channel_id)
         if channel is None:
             raise HTTPException(status_code=404, detail=f"Канала с id {channel_id} не существует")
         related_channel_id = request.related_channel_id

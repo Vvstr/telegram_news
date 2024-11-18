@@ -1,27 +1,29 @@
-from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 from loguru import logger
-from .config import MONGODB_URI
 from fastapi import HTTPException
-
-
-client = MongoClient(MONGODB_URI)
-db = client["telegram_channels"]
-collection = db['channels']
+from database_model import Channel
+from bson import ObjectId
 
 
 def save_channel(channel_data):
     try:
-        result = collection.insert_one(channel_data)
-        return str(result)
+        channel= Channel(
+            channel_id=str(ObjectId()),
+            channel_link=channel_data['channel_link'],
+            channel_name=channel_data['channel_name'],
+            channel_vector=channel_data['channel_vector'],
+            related_channels=channel_data.get('related_channels', [])
+        )
+        Channel.save()
+        return {"id": str(channel.id), "channel_id": str(channel.channel_id)}
     except Exception as e:
         logger.error(f"Ошибка базы данных {e}")
-        raise HTTPException(status_code=500, detail="Ошибка базы данных")
+        return HTTPException(status_code=500, detail="Ошибка базы данных")
 
 
 def get_channel_by_id(channel_id):
     try:
-        channel = collection.find_one({"channel_id": channel_id})
+        channel = Channel.objects(channel_id=channel_id).first()
         return channel
     except Exception as e:
         logger.error(f"Ошибка базы данных {e}")
@@ -30,7 +32,7 @@ def get_channel_by_id(channel_id):
 
 def get_channel_by_link(channel_link):
     try:
-        channel = collection.find_one({"channel_link": {channel_link}})
+        channel = Channel.objects(channel_link=channel_link).first()
         return channel
     except Exception as e:
         logger.error(f"Ошибка базы данных {e}")
@@ -39,8 +41,8 @@ def get_channel_by_link(channel_link):
 
 def get_all_channels():
     try:
-        channels = collection.find()
-        return list(channels)
+        channels = Channel.objects.all()
+        return channels
     except Exception as e:
         logger.error(f"Ошибка базы данных {e}")
         raise HTTPException(status_code=500, detail="Ошибка базы данных")
@@ -48,8 +50,13 @@ def get_all_channels():
 
 def update_channel(channel_id, update_data):
     try:
-        result = collection.find_one({"channel_id": {channel_id}})
-        return result.modified_count > 0
-    except PyMongoError as e:
+        channel = Channel.objects(channel_id=channel_id).first()
+        if channel is None:
+            return False
+        for key, value in enumerate(update_data):
+            setattr(channel, key, value)
+        channel.save()
+        return True
+    except Exception as e:
         logger.error(f"Ошибка базы данных {e}")
         raise HTTPException(status_code=500, detail="Ошибка базы данных")
